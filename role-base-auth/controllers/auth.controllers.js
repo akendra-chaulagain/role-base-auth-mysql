@@ -1,7 +1,6 @@
 const db = require("../connection/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { roles } = require("../utils/constant");
 
 const registerUser = async (req, res) => {
   if (!req.body.username || !req.body.email || !req.body.password) {
@@ -51,23 +50,33 @@ const loginUser = (req, res) => {
     if (err) return res.status(500).json(err);
     if (data.length === 0)
       return res.status(500).json({ msg: "User not found" });
-    const chechPassword = bcrypt.compare(req.body.password, data[0].password);
 
+    const chechPassword = bcrypt.compare(req.body.password, data[0].password);
     if (!chechPassword) return res.status(400).json({ msg: "Invalid data !" });
-    const token = jwt.sign(
-      { id: data[0].id },
-      process.env.JWT_SECRET_KEY
-      //   { expiresIn: "1d" }
+
+    // const token = jwt.sign(
+    //   { id: data[0].id, role: data[0].role },
+    //   process.env.JWT_SECRET_KEY
+    // );
+
+    const accessToken = jwt.sign(
+      { id: data[0].id, role: data[0].role },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: "1d",
+      }
     );
+
     const { password, ...others } = data[0];
-    // saving in cookie
     res
-      .cookie("accessToken", token, {
+      .cookie("accessToken", accessToken, {
         httpOnly: true,
       })
       .status(200)
-      .json(others);
+      .json({ others });
   });
 };
+
+
 
 module.exports = { registerUser, loginUser };
